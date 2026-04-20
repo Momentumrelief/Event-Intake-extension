@@ -23,6 +23,7 @@ Initialize the local repository, connect it to GitHub, and push the project base
 - `git remote -v`: confirmed no remote existed before adding `origin`.
 - `git branch --show-current`: confirmed branch `main`.
 - `git push -u origin main`: pushed the initial baseline and set upstream tracking.
+- `git push`: pushed GitHub setup housekeeping commit to `origin/main`.
 
 ## Canonical Updates
 
@@ -36,7 +37,7 @@ Initialize the local repository, connect it to GitHub, and push the project base
 
 ## Git State
 
-- Committed: pending final housekeeping commit.
-- Pushed: initial baseline pushed; housekeeping push pending.
-- Commit: initial baseline `efb1f7b`.
+- Committed: yes.
+- Pushed: yes.
+- Commit: initial baseline `efb1f7b`; GitHub setup housekeeping `da22584`.
 - Deferred reason: N/A.
