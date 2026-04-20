@@ -24,6 +24,7 @@ Close the current work session by recording the state of the repository, preserv
 - `git diff -- apps/web/src/pages/LoginPage.tsx`: inspected login callback update.
 - `Get-Content -Path sessions\2026-04-20-1800-claude-initial-build.md`: inspected Claude handoff note.
 - `pnpm.cmd --filter web typecheck`: passed.
+- `git push`: pushed close-session commit to `origin/main`.
 
 ## Canonical Updates
 
@@ -37,7 +38,7 @@ Close the current work session by recording the state of the repository, preserv
 
 ## Git State
 
-- Committed: pending final commit.
-- Pushed: pending final push.
-- Commit: N/A until commit completes.
+- Committed: yes.
+- Pushed: yes.
+- Commit: `eff63d4`.
 - Deferred reason: N/A.
