@@ -1,63 +1,116 @@
 # Backlog
 
-Deferred work and open decisions that should not be lost between sessions.
+## Open Items
 
-## Open
+---
 
-### Jane Developer Platform Access
+### TICKET-000: Seed demo event workflow
 
-Status: open  
-Type: research  
-Priority: P1  
-Created: 2026-04-20
+- Status: open
+- Type: feature
+- Priority: P1
+- Ticket: `tickets/seed-demo-event-workflow.md`
+- Context: The app has a dashboard/review shell, but seed data only creates a user and clinic, so the UI is mostly empty after login.
+- Acceptance criteria:
+  - Demo seed creates realistic events, forms, consents, leads, and duplicate candidates
+  - Dashboard and review queue show useful data after setup
+  - Seed command can be rerun safely without duplicating data
 
-Context: Confirm whether partner access is available and which Jane scopes/endpoints are approved for this use case.
+---
 
-Acceptance criteria:
+### TICKET-001: Load Chrome extension in browser
 
-- Jane access path is documented in `docs/architecture.md`.
-- MVP integration approach is recorded as `official_api`, `manual_export_first`, or `hybrid` in `docs/implementation-plan.md`.
+- Status: open
+- Type: chore
+- Priority: P1
+- Context: Extension code is written but has never been loaded into Chrome. Must test popup flow end-to-end: event select → form fill → submit → success/duplicate warning.
+- Acceptance criteria:
+  - Extension loads in `chrome://extensions` with Developer Mode enabled
+  - Popup opens and shows event list
+  - Form submits a lead and receives confirmation
+  - Duplicate warning displays when `duplicateCandidateCount > 0`
 
-### Compliance And PHI Assumptions
+---
 
-Status: open  
-Type: decision  
-Priority: P1  
-Created: 2026-04-20
+### TICKET-002: Events management UI (Phase 3)
 
-Context: Event leads may include health concerns, treatment requests, or other PHI-like data depending on the configured form fields.
+- Status: open
+- Type: feature
+- Priority: P1
+- Context: `/events` route shows a placeholder. Clinic operators need to create and manage events from the web admin.
+- Acceptance criteria:
+  - List existing events for the clinic
+  - Create new event (name, date, location, campaign tags, form template)
+  - Edit/deactivate event
+  - Form template version visible on event detail
 
-Acceptance criteria:
+---
 
-- Compliance assumptions are documented in `docs/architecture.md`.
-- Required consent types are documented in `docs/implementation-plan.md`.
+### TICKET-003: Lead detail page
 
-### First Event Presets
+- Status: open
+- Type: feature
+- Priority: P1
+- Context: Review queue shows leads but no detail view. Operators need to see full field values, consent status, sync history, and duplicate candidates side-by-side.
+- Acceptance criteria:
+  - All submitted field values displayed
+  - Consent grants shown (field, granted, timestamp)
+  - Duplicate candidates listed with match score and reason
+  - Resolve/dismiss duplicate action available
+  - EHR sync history (status, timestamp, error if any)
 
-Status: open  
-Type: feature  
-Priority: P2  
-Created: 2026-04-20
+---
 
-Context: The implementation plan calls for initial event presets such as marathon, medical conference, and health fair.
+### TICKET-004: Consent template management UI
 
-Acceptance criteria:
+- Status: open
+- Type: feature
+- Priority: P2
+- Context: Consent templates exist in the data model and are enforced at submit time, but there is no UI to create or version them.
+- Acceptance criteria:
+  - List consent templates for the clinic
+  - Create new template version
+  - Mark a field as required consent
+  - View which events use each template
 
-- First event presets are defined.
-- Required fields and consents are specified for each preset.
+---
 
-### Close Procedure Git Setup
+### TICKET-005: Initialize git repository
 
-Status: done  
-Type: chore  
-Priority: P2  
-Created: 2026-04-20
+- Status: done
+- Type: chore
+- Priority: P1
+- Context: The project directory needed to be initialized and pushed to GitHub.
+- Acceptance criteria:
+  - `git init` run in `C:\Users\paint\eventintake`
+  - `.gitignore` already present (node_modules, dist, .env, *.db)
+  - Initial commit staged and created
+  - Remote added and pushed (GitHub or other)
+- Resolution: Repository is connected to `https://github.com/Momentumrelief/Event-Intake-extension.git`; `main` tracks `origin/main`.
 
-Context: The workspace needed to be initialized as a Git repository and connected to GitHub.
+---
 
-Acceptance criteria:
+### TICKET-006: Jane OAuth adapter (Phase 5/6)
 
-- Repository is initialized or connected to the intended remote.
-- Close procedure can complete commit and push steps when appropriate.
+- Status: open
+- Type: feature
+- Priority: P3
+- Context: EHR sync currently has no real adapter. Jane App OAuth flow needs to be built behind a feature flag.
+- Acceptance criteria:
+  - OAuth 2.0 authorization code flow with Jane App
+  - Token stored per clinic
+  - Patient search and create endpoints wired to Jane API
+  - Feature-flagged so sync still works without it (manual export fallback)
 
-Resolution: Initialized the local repository, connected `origin` to `https://github.com/Momentumrelief/Event-Intake-extension.git`, and pushed `main`.
+---
+
+### TICKET-007: Manual export fallback UI
+
+- Status: open
+- Type: feature
+- Priority: P2
+- Context: Architecture calls for CSV/PDF export as fallback when EHR sync is unavailable or rejected. Not yet built.
+- Acceptance criteria:
+  - Export approved leads as CSV from review queue
+  - Fields map to common EHR import format
+  - Export logged as `exported` status in sync history
