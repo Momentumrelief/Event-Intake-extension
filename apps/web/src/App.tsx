@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, NavLink } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { LoginPage } from "./pages/LoginPage.js";
 import { ReviewQueuePage } from "./pages/ReviewQueuePage.js";
@@ -7,13 +7,9 @@ import { api, getToken, clearToken } from "./lib/api.js";
 interface AuthUser {
   id: string;
   email: string;
+  firstName?: string;
+  lastName?: string;
   clinics: Array<{ id: string; name: string; role: string }>;
-}
-
-function RequireAuth({ children }: { children: React.ReactNode }) {
-  const token = getToken();
-  if (!token) return <Navigate to="/login" replace />;
-  return <>{children}</>;
 }
 
 function Layout({ user, children }: { user: AuthUser; children: React.ReactNode }) {
@@ -51,35 +47,27 @@ function Layout({ user, children }: { user: AuthUser; children: React.ReactNode 
 function DashboardPage({ clinicId }: { clinicId: string }) {
   return (
     <div style={{ padding: "24px 32px" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 16 }}>Dashboard</h2>
-      <p style={{ color: "#6b7280", fontSize: 14 }}>
-        Clinic ID: <code>{clinicId}</code>
+      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Dashboard</h2>
+      <p style={{ color: "#6b7280", fontSize: 14, marginBottom: 24 }}>
+        Clinic ID: <code style={{ backgroundColor: "#f3f4f6", padding: "2px 6px", borderRadius: 4 }}>{clinicId}</code>
       </p>
-      <div style={{ marginTop: 24, display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-        <div style={cardStyle}>
-          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>REVIEW QUEUE</p>
-          <a href="/review" style={{ fontSize: 14, color: "#2563eb" }}>View pending leads →</a>
-        </div>
-        <div style={cardStyle}>
-          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>EVENTS</p>
-          <a href="/events" style={{ fontSize: 14, color: "#2563eb" }}>Manage events →</a>
-        </div>
-        <div style={cardStyle}>
-          <p style={{ fontSize: 12, color: "#6b7280", marginBottom: 4 }}>EHR SYNC</p>
-          <p style={{ fontSize: 14, color: "#374151" }}>Coming in Phase 5</p>
-        </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+        {[
+          { label: "REVIEW QUEUE", text: "View pending leads →", href: "/review" },
+          { label: "EVENTS", text: "Manage events →", href: "/events" },
+          { label: "EHR SYNC", text: "Coming in Phase 5", href: null },
+        ].map((card) => (
+          <div key={card.label} style={cardStyle}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", letterSpacing: "0.06em", marginBottom: 6 }}>{card.label}</p>
+            {card.href
+              ? <a href={card.href} style={{ fontSize: 14, color: "#2563eb", textDecoration: "none" }}>{card.text}</a>
+              : <p style={{ fontSize: 14, color: "#9ca3af" }}>{card.text}</p>}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: "#fff",
-  borderRadius: 8,
-  padding: 16,
-  boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
-  border: "1px solid #e5e7eb",
-};
 
 function EventsPlaceholder() {
   return (
@@ -90,62 +78,84 @@ function EventsPlaceholder() {
   );
 }
 
-export function App() {
+// All routing lives inside BrowserRouter so hooks like useNavigate work
+function AppRoutes() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!getToken()) {
       setLoading(false);
       return;
     }
-    api.auth.me().then((u) => {
-      setUser(u as AuthUser);
-      setLoading(false);
-    }).catch(() => {
-      clearToken();
-      setLoading(false);
-    });
+    api.auth.me()
+      .then((u) => { setUser(u as AuthUser); setLoading(false); })
+      .catch(() => { clearToken(); setLoading(false); });
   }, []);
 
+  function handleLogin(loggedInUser: AuthUser) {
+    setUser(loggedInUser);
+    navigate("/");
+  }
+
   if (loading) {
-    return <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>Loading…</div>;
+    return (
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", color: "#9ca3af" }}>
+        Loading…
+      </div>
+    );
   }
 
   const clinicId = user?.clinics[0]?.id ?? "";
 
   return (
+    <Routes>
+      <Route path="/login" element={
+        user
+          ? <Navigate to="/" replace />
+          : <LoginPage onLogin={handleLogin} />
+      } />
+      <Route path="/*" element={
+        !getToken()
+          ? <Navigate to="/login" replace />
+          : user
+            ? (
+              <Layout user={user}>
+                <Routes>
+                  <Route path="/" element={<DashboardPage clinicId={clinicId} />} />
+                  <Route path="/review" element={<ReviewQueuePage clinicId={clinicId} />} />
+                  <Route path="/events" element={<EventsPlaceholder />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Layout>
+            )
+            : <Navigate to="/login" replace />
+      } />
+    </Routes>
+  );
+}
+
+export function App() {
+  return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route
-          path="/*"
-          element={
-            <RequireAuth>
-              {user ? (
-                <Layout user={user}>
-                  <Routes>
-                    <Route path="/" element={<DashboardPage clinicId={clinicId} />} />
-                    <Route path="/review" element={<ReviewQueuePage clinicId={clinicId} />} />
-                    <Route path="/events" element={<EventsPlaceholder />} />
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Layout>
-              ) : (
-                <Navigate to="/login" replace />
-              )}
-            </RequireAuth>
-          }
-        />
-      </Routes>
+      <AppRoutes />
     </BrowserRouter>
   );
 }
 
+const cardStyle: React.CSSProperties = {
+  backgroundColor: "#fff",
+  borderRadius: 8,
+  padding: "16px 20px",
+  boxShadow: "0 1px 3px rgba(0,0,0,0.07)",
+  border: "1px solid #e5e7eb",
+};
+
 const styles: Record<string, React.CSSProperties> = {
   layout: { minHeight: "100vh", display: "flex", flexDirection: "column" },
   nav: { backgroundColor: "#fff", borderBottom: "1px solid #e5e7eb", display: "flex", alignItems: "center", padding: "0 24px", height: 56, gap: 24 },
-  navBrand: { fontSize: 16, fontWeight: 700, color: "#111827", marginRight: 8 },
+  navBrand: { fontSize: 15, fontWeight: 700, color: "#111827", marginRight: 8 },
   navLinks: { display: "flex", gap: 4, flex: 1 },
   navLink: { padding: "6px 10px", borderRadius: 6, fontSize: 14, color: "#6b7280", textDecoration: "none" },
   navLinkActive: { backgroundColor: "#eff6ff", color: "#2563eb", fontWeight: 600 },

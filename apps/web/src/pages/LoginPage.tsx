@@ -1,13 +1,23 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { api, setToken } from "../lib/api.js";
 
-export function LoginPage() {
+interface AuthUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  clinics: Array<{ id: string; name: string; role: string }>;
+}
+
+interface Props {
+  onLogin: (user: AuthUser) => void;
+}
+
+export function LoginPage({ onLogin }: Props) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -16,7 +26,7 @@ export function LoginPage() {
     try {
       const result = await api.auth.login(email, password);
       setToken(result.accessToken);
-      navigate("/");
+      onLogin(result.user);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     } finally {
@@ -69,7 +79,7 @@ const styles: Record<string, React.CSSProperties> = {
   form: { display: "flex", flexDirection: "column", gap: 14 },
   field: { display: "flex", flexDirection: "column", gap: 5 },
   label: { fontSize: 13, fontWeight: 500, color: "#374151" },
-  input: { padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 },
-  error: { fontSize: 13, color: "#dc2626", backgroundColor: "#fef2f2", padding: "8px 10px", borderRadius: 6 },
+  input: { padding: "8px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, outline: "none" },
+  error: { fontSize: 13, color: "#dc2626", backgroundColor: "#fef2f2", padding: "8px 10px", borderRadius: 6, margin: 0 },
   btn: { padding: "9px", backgroundColor: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 14, fontWeight: 600, cursor: "pointer" },
 };
