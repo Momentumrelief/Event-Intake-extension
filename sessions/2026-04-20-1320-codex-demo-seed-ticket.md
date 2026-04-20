@@ -17,6 +17,7 @@ Create a clear next ticket for making the dashboard and review queue useful with
 - `Get-Content -Path tickets\seed-demo-event-workflow.md`: read back dedicated ticket.
 - `Get-Content -Path sessions\2026-04-20-1320-codex-demo-seed-ticket.md`: read back session note.
 - `git diff -- tickets/backlog.md tickets/seed-demo-event-workflow.md sessions/2026-04-20-1320-codex-demo-seed-ticket.md`: reviewed ticket-related diff before commit.
+- `git push`: pushed ticket commit to `origin/main`.
 
 ## Canonical Updates
 
@@ -29,7 +30,7 @@ Create a clear next ticket for making the dashboard and review queue useful with
 
 ## Git State
 
-- Committed: pending final commit.
-- Pushed: pending final push.
-- Commit: N/A until commit completes.
+- Committed: yes.
+- Pushed: yes.
+- Commit: `d1f30e8`.
 - Deferred reason: N/A.
