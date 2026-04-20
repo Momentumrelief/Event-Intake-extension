@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// SQLite stores enums as text — Prisma handles the mapping automatically
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinics Clinic[]
+
+  @@map("organizations")
+}
+
+model Clinic {
+  id             String  @id @default(uuid())
+  organizationId String  @map("organization_id")
+  name           String
+  timezone       String  @default("America/New_York")
+  country        String  @default("CA")
+  ehrProvider    String? @map("ehr_provider")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  organization     Organization       @relation(fields: [organizationId], references: [id])
+  memberships      ClinicMembership[]
+  events           Event[]
+  formTemplates    FormTemplate[]
+  consentTemplates ConsentTemplate[]
+  ehrConnections   EhrConnection[]
+  ehrFieldMappings EhrFieldMapping[]
+
+  @@map("clinics")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships            ClinicMembership[]
+  createdLeads           Lead[]               @relation("LeadCreatedBy")
+  approvedLeads          Lead[]               @relation("LeadApprovedBy")
+  resolvedDuplicates     DuplicateCandidate[]
+  createdConsentVersions ConsentTemplateVersion[]
+  cancelledSyncJobs      EhrSyncJob[]
+
+  @@map("users")
+}
+
+model ClinicMembership {
+  id        String   @id @default(uuid())
+  clinicId  String   @map("clinic_id")
+  userId    String   @map("user_id")
+  role      String   // owner | admin | event_staff | reviewer
+  createdAt DateTime @default(now())
+
+  clinic Clinic @relation(fields: [clinicId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([clinicId, userId])
+  @@map("clinic_memberships")
+}
+
+model Event {
+  id                           String   @id @default(uuid())
+  clinicId                     String   @map("clinic_id")
+  name                         String
+  eventType                    String   @map("event_type") // marathon | medical_conference | health_fair | corporate_event | screening | other
+  locationName                 String?  @map("location_name")
+  address                      String?
+  startAt                      DateTime @map("start_at")
+  endAt                        DateTime @map("end_at")
+  timezone                     String
+  defaultFormTemplateVersionId String?  @map("default_form_template_version_id")
+  status                       String   @default("draft") // draft | active | closed | archived
+  campaignTags                 String   @default("[]") @map("campaign_tags") // JSON array stored as text
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  clinic              Clinic                    @relation(fields: [clinicId], references: [id])
+  leads               Lead[]
+  consentRequirements EventConsentRequirement[]
+
+  @@map("events")
+}
+
+model FormTemplate {
+  id        String   @id @default(uuid())
+  clinicId  String   @map("clinic_id")
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  clinic   Clinic                @relation(fields: [clinicId], references: [id])
+  versions FormTemplateVersion[]
+
+  @@map("form_templates")
+}
+
+model FormTemplateVersion {
+  id             String    @id @default(uuid())
+  formTemplateId String    @map("form_template_id")
+  versionNumber  Int       @map("version_number")
+  isPublished    Boolean   @default(false) @map("is_published")
+  publishedAt    DateTime? @map("published_at")
+  createdAt      DateTime  @default(now())
+
+  formTemplate FormTemplate @relation(fields: [formTemplateId], references: [id])
+  fields       FormField[]
+  leads        Lead[]
+
+  @@unique([formTemplateId, versionNumber])
+  @@map("form_template_versions")
+}
+
+model FormField {
+  id                    String   @id @default(uuid())
+  formTemplateVersionId String   @map("form_template_version_id")
+  key                   String
+  label                 String
+  type                  String   // short_text | long_text | phone | email | address | date | date_of_birth | single_select | multi_select | checkbox | consent_checkbox | number
+  required              Boolean  @default(false)
+  helpText              String?  @map("help_text")
+  placeholder           String?
+  options               String?  // JSON array stored as text
+  piiCategory           String   @default("none") @map("pii_category") // none | contact | health | demographic | insurance
+  ehrFieldPath          String?  @map("ehr_field_path")
+  ehrTransform          String?  @map("ehr_transform") // none | uppercase | date_iso | phone_e164
+  ehrFallbackToNote     Boolean  @default(false) @map("ehr_fallback_to_note")
+  displayOrder          Int      @map("display_order")
+  createdAt             DateTime @default(now())
+
+  formTemplateVersion FormTemplateVersion @relation(fields: [formTemplateVersionId], references: [id])
+  leadFieldValues     LeadFieldValue[]
+
+  @@unique([formTemplateVersionId, key])
+  @@map("form_fields")
+}
+
+model ConsentTemplate {
+  id          String   @id @default(uuid())
+  clinicId    String   @map("clinic_id")
+  name        String
+  consentType String   @map("consent_type") // contact | marketing | treatment | custom
+  createdBy   String   @map("created_by")
+  createdAt   DateTime @default(now())
+
+  clinic   Clinic                   @relation(fields: [clinicId], references: [id])
+  versions ConsentTemplateVersion[]
+
+  @@map("consent_templates")
+}
+
+model ConsentTemplateVersion {
+  id                String    @id @default(uuid())
+  consentTemplateId String    @map("consent_template_id")
+  versionNumber     Int       @map("version_number")
+  bodyText          String    @map("body_text")
+  shortLabel        String    @map("short_label")
+  effectiveFrom     DateTime  @map("effective_from")
+  effectiveUntil    DateTime? @map("effective_until")
+  createdBy         String    @map("created_by")
+  createdAt         DateTime  @default(now())
+
+  consentTemplate   ConsentTemplate           @relation(fields: [consentTemplateId], references: [id])
+  createdByUser     User                      @relation(fields: [createdBy], references: [id])
+  eventRequirements EventConsentRequirement[]
+  leadConsents      LeadConsent[]
+
+  @@unique([consentTemplateId, versionNumber])
+  @@map("consent_template_versions")
+}
+
+model EventConsentRequirement {
+  id                       String  @id @default(uuid())
+  eventId                  String  @map("event_id")
+  consentTemplateVersionId String  @map("consent_template_version_id")
+  required                 Boolean @default(true)
+  displayOrder             Int     @map("display_order")
+
+  event                  Event                  @relation(fields: [eventId], references: [id])
+  consentTemplateVersion ConsentTemplateVersion @relation(fields: [consentTemplateVersionId], references: [id])
+
+  @@unique([eventId, consentTemplateVersionId])
+  @@map("event_consent_requirements")
+}
+
+model Lead {
+  id                    String    @id @default(uuid())
+  eventId               String    @map("event_id")
+  formTemplateVersionId String    @map("form_template_version_id")
+  firstName             String    @map("first_name")
+  lastName              String    @map("last_name")
+  email                 String?
+  phone                 String?
+  dateOfBirth           DateTime? @map("date_of_birth")
+  source                String?
+  status                String    @default("submitted") // draft | submitted | needs_review | ready | sync_queued | syncing | synced | sync_failed | sync_rejected | exported | archived
+  idempotencyKey        String    @unique @map("idempotency_key")
+  createdBy             String    @map("created_by")
+  approvedBy            String?   @map("approved_by")
+  approvedAt            DateTime? @map("approved_at")
+  rejectionReason       String?   @map("rejection_reason")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  event               Event               @relation(fields: [eventId], references: [id])
+  formTemplateVersion FormTemplateVersion @relation(fields: [formTemplateVersionId], references: [id])
+  createdByUser       User                @relation("LeadCreatedBy", fields: [createdBy], references: [id])
+  approvedByUser      User?               @relation("LeadApprovedBy", fields: [approvedBy], references: [id])
+  fieldValues         LeadFieldValue[]
+  consents            LeadConsent[]
+  notes               LeadNote[]
+  duplicates          DuplicateCandidate[]
+  syncJobs            EhrSyncJob[]
+  ehrPatientRef       EhrPatientRef?
+  auditEvents         AuditEvent[]
+
+  @@map("leads")
+}
+
+model LeadFieldValue {
+  id          String   @id @default(uuid())
+  leadId      String   @map("lead_id")
+  formFieldId String   @map("form_field_id")
+  value       String
+  createdAt   DateTime @default(now())
+
+  lead      Lead      @relation(fields: [leadId], references: [id])
+  formField FormField @relation(fields: [formFieldId], references: [id])
+
+  @@unique([leadId, formFieldId])
+  @@map("lead_field_values")
+}
+
+model LeadConsent {
+  id                       String   @id @default(uuid())
+  leadId                   String   @map("lead_id")
+  consentTemplateVersionId String   @map("consent_template_version_id")
+  granted                  Boolean
+  capturedAt               DateTime @map("captured_at")
+  capturedBy               String   @map("captured_by")
+  rawCheckboxValue         Boolean  @map("raw_checkbox_value")
+  createdAt                DateTime @default(now())
+
+  lead                   Lead                   @relation(fields: [leadId], references: [id])
+  consentTemplateVersion ConsentTemplateVersion @relation(fields: [consentTemplateVersionId], references: [id])
+
+  @@unique([leadId, consentTemplateVersionId])
+  @@map("lead_consents")
+}
+
+model LeadNote {
+  id        String   @id @default(uuid())
+  leadId    String   @map("lead_id")
+  body      String
+  createdBy String   @map("created_by")
+  createdAt DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id])
+
+  @@map("lead_notes")
+}
+
+model DuplicateCandidate {
+  id             String    @id @default(uuid())
+  leadId         String    @map("lead_id")
+  candidateType  String    @map("candidate_type") // internal_lead | ehr_patient
+  candidateRef   String    @map("candidate_ref")
+  matchReason    String    @map("match_reason") // JSON array stored as text
+  matchScore     Float     @map("match_score")
+  status         String    @default("pending") // pending | merged | dismissed | new_record
+  resolvedBy     String?   @map("resolved_by")
+  resolvedAt     DateTime? @map("resolved_at")
+  resolutionNote String?   @map("resolution_note")
+  createdAt      DateTime  @default(now())
+
+  lead           Lead  @relation(fields: [leadId], references: [id])
+  resolvedByUser User? @relation(fields: [resolvedBy], references: [id])
+
+  @@map("duplicate_candidates")
+}
+
+model EhrConnection {
+  id              String    @id @default(uuid())
+  clinicId        String    @map("clinic_id")
+  provider        String    // jane | practice_fusion | simplepractice | csv
+  clinicUrl       String?   @map("clinic_url")
+  encryptedTokens String?   @map("encrypted_tokens")
+  status          String    @default("disconnected")
+  lastTestedAt    DateTime? @map("last_tested_at")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  clinic        Clinic            @relation(fields: [clinicId], references: [id])
+  syncJobs      EhrSyncJob[]
+  fieldMappings EhrFieldMapping[]
+
+  @@map("ehr_connections")
+}
+
+model EhrFieldMapping {
+  id              String   @id @default(uuid())
+  clinicId        String   @map("clinic_id")
+  ehrConnectionId String   @map("ehr_connection_id")
+  formFieldKey    String   @map("form_field_key")
+  ehrFieldPath    String   @map("ehr_field_path")
+  transform       String   @default("none") // none | uppercase | date_iso | phone_e164
+  fallbackToNote  Boolean  @default(false) @map("fallback_to_note")
+  displayOrder    Int      @default(0) @map("display_order")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  clinic        Clinic        @relation(fields: [clinicId], references: [id])
+  ehrConnection EhrConnection @relation(fields: [ehrConnectionId], references: [id])
+
+  @@unique([ehrConnectionId, formFieldKey])
+  @@map("ehr_field_mappings")
+}
+
+model EhrSyncJob {
+  id                   String    @id @default(uuid())
+  leadId               String    @map("lead_id")
+  ehrConnectionId      String    @map("ehr_connection_id")
+  status               String    @default("queued") // queued | running | succeeded | failed | rejected | cancelled
+  attemptCount         Int       @default(0) @map("attempt_count")
+  maxAttempts          Int       @default(5) @map("max_attempts")
+  lastAttemptedAt      DateTime? @map("last_attempted_at")
+  nextRetryAt          DateTime? @map("next_retry_at")
+  ehrPatientId         String?   @map("ehr_patient_id")
+  ehrRequestId         String?   @map("ehr_request_id")
+  errorCode            String?   @map("error_code")
+  errorMessage         String?   @map("error_message")
+  errorPayload         String?   @map("error_payload") // JSON stored as text
+  fieldMappingSnapshot String?   @map("field_mapping_snapshot") // JSON stored as text
+  cancelledBy          String?   @map("cancelled_by")
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  lead            Lead          @relation(fields: [leadId], references: [id])
+  ehrConnection   EhrConnection @relation(fields: [ehrConnectionId], references: [id])
+  cancelledByUser User?         @relation(fields: [cancelledBy], references: [id])
+
+  @@map("ehr_sync_jobs")
+}
+
+model EhrPatientRef {
+  id           String   @id @default(uuid())
+  leadId       String   @unique @map("lead_id")
+  ehrProvider  String   @map("ehr_provider")
+  ehrPatientId String   @map("ehr_patient_id")
+  createdAt    DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id])
+
+  @@map("ehr_patient_refs")
+}
+
+model AuditEvent {
+  id        String   @id @default(uuid())
+  leadId    String?  @map("lead_id")
+  userId    String?  @map("user_id")
+  action    String
+  payload   String?  // JSON stored as text
+  createdAt DateTime @default(now())
+
+  lead Lead? @relation(fields: [leadId], references: [id])
+
+  @@map("audit_events")
+}
