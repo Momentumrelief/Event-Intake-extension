@@ -6,7 +6,7 @@
 
 ### TICKET-000: Seed demo event workflow
 
-- Status: open
+- Status: done
 - Type: feature
 - Priority: P1
 - Ticket: `tickets/seed-demo-event-workflow.md`
@@ -15,6 +15,7 @@
   - Demo seed creates realistic events, forms, consents, leads, and duplicate candidates
   - Dashboard and review queue show useful data after setup
   - Seed command can be rerun safely without duplicating data
+- Resolution: `apps/api/src/seed.ts` seeds 3 events (marathon, health fair, employer), 3 versioned form templates (19 fields), contact/marketing/treatment consent templates with 5 event consent requirements, 12 leads split evenly across submitted/needs_review/ready/synced, 3 duplicate candidates, and 3 EHR patient refs. Child-table upserts use composite unique keys so the seed self-heals legacy id collisions. Verified via two successive `pnpm --filter api db:seed` runs and API smoke test (login + review queue returns 6 leads with duplicates/consents counts).
 
 ---
 

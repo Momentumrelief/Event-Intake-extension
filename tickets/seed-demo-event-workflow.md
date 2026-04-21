@@ -1,10 +1,11 @@
 # Ticket: Seed Demo Event Workflow
 
-Status: open
+Status: done
 Type: feature
 Priority: P1
-Owner: unassigned
+Owner: Claude
 Created: 2026-04-20
+Resolved: 2026-04-21
 
 ## Context
 
