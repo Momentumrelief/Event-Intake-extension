@@ -2,6 +2,23 @@
 
 This file applies to Codex, Claude, and any other coding agent working in this repository.
 
+## Required Startup Directive
+
+At the start of every work session:
+
+1. Read the role-specific startup file if it exists:
+   - Codex: `CODEX.md`
+   - Claude: `CLAUDE.md`
+2. Read this shared `AGENTS.md`.
+3. Read the latest relevant project context:
+   - `README.md`
+   - `docs/architecture.md`
+   - `docs/implementation-plan.md`
+   - `tickets/backlog.md`
+   - Latest file in `sessions/`
+4. Run `git status --short --branch` before editing files.
+5. Treat uncommitted work as owned by the user or another agent unless explicitly told otherwise.
+
 ## Required Close Directive
 
 Before ending any work session:
