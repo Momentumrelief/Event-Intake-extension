@@ -40,17 +40,21 @@
 
 ---
 
-### TICKET-002: Events management UI (Phase 3)
+### TICKET-002: Events management and inline template builder
 
 - Status: open
 - Type: feature
 - Priority: P1
-- Context: `/events` route shows a placeholder. Clinic operators need to create and manage events from the web admin.
+- Ticket: `tickets/events-management-template-builder.md`
+- Context: `/events` route shows a placeholder. Clinic operators need to create and manage events from the web admin, choose existing intake templates, or build a new template directly from the event setup flow.
 - Acceptance criteria:
   - List existing events for the clinic
-  - Create new event (name, date, location, campaign tags, form template)
-  - Edit/deactivate event
-  - Form template version visible on event detail
+  - Create new event (name, event type, dates, location, campaign tags, status)
+  - Choose an existing form template during event creation
+  - Create/build a new form template during event creation
+  - Preview the event intake questionnaire before publishing
+  - Edit/deactivate/archive event
+  - Form template version and consent requirements visible on event detail
 
 ---
 
@@ -122,3 +126,39 @@
   - Export approved leads as CSV from review queue
   - Fields map to common EHR import format
   - Export logged as `exported` status in sync history
+
+---
+
+### TICKET-008: Template library management
+
+- Status: open
+- Type: feature
+- Priority: P1
+- Ticket: `tickets/template-library-management.md`
+- Context: Clinic operators need a dedicated template library where they can create new intake templates, choose existing templates, duplicate templates, and modify templates through versioned updates.
+- Acceptance criteria:
+  - List reusable templates for the clinic
+  - Create a new template from scratch
+  - Duplicate an existing template
+  - Edit fields, labels, types, required flags, options, and display order
+  - Preview the template as potential clients will see it
+  - Editing a used template creates a new immutable version
+  - Show which events use each template version
+
+---
+
+### TICKET-009: Intake questionnaire branding settings
+
+- Status: open
+- Type: feature
+- Priority: P2
+- Ticket: `tickets/intake-branding-settings.md`
+- Context: Clinic operators need control over client-facing intake questionnaire branding, including logo, colors, title, and intro copy.
+- Acceptance criteria:
+  - Configure clinic-level intake branding with optional event override
+  - Add or select a logo for the questionnaire
+  - Configure primary, accent, background, and button colors
+  - Configure questionnaire title and intro text
+  - Preview branding with a real template and consent blocks
+  - Apply branding consistently in the client-facing intake UI
+  - Keep branding scoped by clinic
