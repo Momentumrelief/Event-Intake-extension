@@ -40,5 +40,5 @@ Create backlog tickets for near-term admin UI work requested by the user:
 ## Git State
 
 - Committed: yes.
-- Pushed: pending at time of writing.
+- Pushed: yes.
 - Commit: `Add product UI planning tickets`.
