@@ -73,5 +73,5 @@ state left behind by earlier partial runs.
 
 - Committed: yes.
 - Pushed: yes.
-- Commit: see final assistant message.
+- Commit: `5e752d1` (Seed demo event workflow (TICKET-000)).
 - Deferred reason: N/A.
