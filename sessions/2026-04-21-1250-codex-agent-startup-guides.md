@@ -36,7 +36,7 @@ Create startup guidance files for Codex and Claude so each new session begins wi
 
 ## Git State
 
-- Committed: pending.
-- Pushed: pending.
-- Commit: N/A.
+- Committed: yes.
+- Pushed: yes.
+- Commit: see Git log for this session note.
 - Deferred reason: N/A.
