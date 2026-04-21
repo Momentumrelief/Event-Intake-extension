@@ -34,11 +34,28 @@ interface FieldDef {
   type: string;
   required: boolean;
   piiCategory: string;
-  options?: string[] | undefined;
+  // Options are stored as JSON-serialized { value, label } objects so the extension
+  // FieldRenderer (which reads field.options[].value / .label) works directly.
+  options?: Array<{ value: string; label: string }> | undefined;
   helpText?: string | undefined;
   placeholder?: string | undefined;
   ehrFieldPath?: string | undefined;
 }
+
+const CONCERN_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "Lower back pain", label: "Lower back pain" },
+  { value: "Knee pain", label: "Knee pain" },
+  { value: "Shoulder pain", label: "Shoulder pain" },
+  { value: "Neck / posture", label: "Neck / posture" },
+  { value: "Other", label: "Other" },
+];
+
+const RACE_DISTANCE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: "5K", label: "5K" },
+  { value: "10K", label: "10K" },
+  { value: "Half marathon", label: "Half marathon" },
+  { value: "Marathon", label: "Marathon" },
+];
 
 async function seed(): Promise<void> {
   console.warn("Seeding database...");
@@ -88,32 +105,33 @@ async function seed(): Promise<void> {
   });
 
   // ---------- Form templates ----------
+  // Field keys are snake_case per the shared IntakeField schema regex and the
+  // architecture doc. The extension's LeadForm looks up first_name / last_name /
+  // date_of_birth by these keys to build the top-level Lead payload.
   const sharedContactFields: FieldDef[] = [
-    { key: "firstName", label: "First name", type: "short_text", required: true, piiCategory: "contact", ehrFieldPath: "patient.first_name" },
-    { key: "lastName", label: "Last name", type: "short_text", required: true, piiCategory: "contact", ehrFieldPath: "patient.last_name" },
+    { key: "first_name", label: "First name", type: "short_text", required: true, piiCategory: "contact", ehrFieldPath: "patient.first_name" },
+    { key: "last_name", label: "Last name", type: "short_text", required: true, piiCategory: "contact", ehrFieldPath: "patient.last_name" },
     { key: "email", label: "Email", type: "email", required: true, piiCategory: "contact", ehrFieldPath: "patient.email" },
     { key: "phone", label: "Mobile phone", type: "phone", required: true, piiCategory: "contact", ehrFieldPath: "patient.cell_phone" },
   ];
 
-  const concernOptions = ["Lower back pain", "Knee pain", "Shoulder pain", "Neck / posture", "Other"];
-
   await upsertFormTemplate(ID.formMarathon, ID.formMarathonV1, "Race Expo Intake", [
     ...sharedContactFields,
-    { key: "raceDistance", label: "Race distance", type: "single_select", required: false, piiCategory: "none", options: ["5K", "10K", "Half marathon", "Marathon"] },
-    { key: "primaryConcern", label: "Primary concern (if any)", type: "single_select", required: false, piiCategory: "health", options: concernOptions },
+    { key: "race_distance", label: "Race distance", type: "single_select", required: false, piiCategory: "none", options: RACE_DISTANCE_OPTIONS },
+    { key: "primary_concern", label: "Primary concern (if any)", type: "single_select", required: false, piiCategory: "health", options: CONCERN_OPTIONS },
   ]);
 
   await upsertFormTemplate(ID.formHealthFair, ID.formHealthFairV1, "Health Fair Intake", [
     ...sharedContactFields,
-    { key: "dateOfBirth", label: "Date of birth", type: "date_of_birth", required: false, piiCategory: "demographic", ehrFieldPath: "patient.dob" },
-    { key: "primaryConcern", label: "Primary concern", type: "single_select", required: true, piiCategory: "health", options: concernOptions },
-    { key: "currentTreatment", label: "Currently receiving treatment elsewhere?", type: "long_text", required: false, piiCategory: "health" },
+    { key: "date_of_birth", label: "Date of birth", type: "date_of_birth", required: false, piiCategory: "demographic", ehrFieldPath: "patient.dob" },
+    { key: "primary_concern", label: "Primary concern", type: "single_select", required: true, piiCategory: "health", options: CONCERN_OPTIONS },
+    { key: "current_treatment", label: "Currently receiving treatment elsewhere?", type: "long_text", required: false, piiCategory: "health" },
   ]);
 
   await upsertFormTemplate(ID.formEmployer, ID.formEmployerV1, "Employer Benefits Day Intake", [
     ...sharedContactFields,
     { key: "employer", label: "Employer", type: "short_text", required: true, piiCategory: "demographic" },
-    { key: "primaryConcern", label: "Primary concern", type: "single_select", required: false, piiCategory: "health", options: concernOptions },
+    { key: "primary_concern", label: "Primary concern", type: "single_select", required: false, piiCategory: "health", options: CONCERN_OPTIONS },
   ]);
 
   // ---------- Consent templates ----------
@@ -231,6 +249,21 @@ async function upsertFormTemplate(
       publishedAt: new Date("2026-04-01T00:00:00Z"),
     },
   });
+
+  // Drop any stale fields from older seed runs that used a different key convention
+  // (e.g. camelCase `firstName` before snake_case `first_name`). Their lead field
+  // values go with them so no FK orphans are left behind.
+  const expectedKeys = fields.map((f) => f.key);
+  const staleFields = await prisma.formField.findMany({
+    where: { formTemplateVersionId: versionId, key: { notIn: expectedKeys } },
+    select: { id: true },
+  });
+  if (staleFields.length > 0) {
+    const staleIds = staleFields.map((f) => f.id);
+    await prisma.leadFieldValue.deleteMany({ where: { formFieldId: { in: staleIds } } });
+    await prisma.formField.deleteMany({ where: { id: { in: staleIds } } });
+  }
+
   for (const [i, f] of fields.entries()) {
     const data = {
       label: f.label,
@@ -440,15 +473,16 @@ async function upsertLead(userId: string, p: LeadPlan): Promise<void> {
     },
   });
 
-  // Field values for the captured form fields (firstName/lastName/email/phone always present;
-  // extra fields depend on the form template).
+  // Field values for the captured form fields (first_name/last_name/email/phone always
+  // present; extra fields depend on the form template). Keys match the snake_case
+  // form field keys set above.
   const valueMap: Record<string, string | undefined> = {
-    firstName: p.firstName,
-    lastName: p.lastName,
+    first_name: p.firstName,
+    last_name: p.lastName,
     email: p.email,
     phone: p.phone,
-    primaryConcern: p.primaryConcern,
-    raceDistance: p.raceDistance,
+    primary_concern: p.primaryConcern,
+    race_distance: p.raceDistance,
     employer: p.employer,
   };
   for (const [key, value] of Object.entries(valueMap)) {

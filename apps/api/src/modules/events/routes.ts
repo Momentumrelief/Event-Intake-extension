@@ -218,6 +218,14 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
     });
     if (!version) throw new NotFoundError("FormTemplateVersion");
     await assertClinicAccess(version.formTemplate.clinicId, req.user.sub);
-    return version;
+    // options is stored as a JSON-serialized string in SQLite; parse before returning
+    // so the extension can consume field.options[].value / .label directly.
+    return {
+      ...version,
+      fields: version.fields.map((f) => ({
+        ...f,
+        options: f.options ? (JSON.parse(f.options) as Array<{ value: string; label: string }>) : null,
+      })),
+    };
   });
 }

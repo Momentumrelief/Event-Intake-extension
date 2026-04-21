@@ -21,7 +21,7 @@
 
 ### TICKET-001: Load Chrome extension in browser
 
-- Status: open
+- Status: open (backend + build ready; awaits manual Chrome load)
 - Type: chore
 - Priority: P1
 - Context: Extension code is written but has never been loaded into Chrome. Must test popup flow end-to-end: event select → form fill → submit → success/duplicate warning.
@@ -30,6 +30,13 @@
   - Popup opens and shows event list
   - Form submits a lead and receives confirmation
   - Duplicate warning displays when `duplicateCandidateCount > 0`
+- Progress (2026-04-21 claude session):
+  - Fixed extension build so `dist/` matches manifest.json paths: popup now at `dist/popup/index.html`, service worker at `dist/background/service-worker.js`.
+  - Fixed seed field keys from camelCase (`firstName`, `lastName`, …) to snake_case (`first_name`, `last_name`, `date_of_birth`, `primary_concern`, `race_distance`, `current_treatment`) to match the `packages/shared` IntakeField regex and the extension's lookup convention.
+  - Fixed seed options storage from flat string arrays to `{value,label}` objects the extension consumes.
+  - Fixed `GET /form-template-versions/:id` to parse `options` JSON before returning.
+  - Verified end-to-end API contract the extension uses: login, list active events, load form version (options arrive parsed), load consent requirements, submit new lead (→ ready), submit duplicate (→ needs_review with `duplicateCandidateCount=1`), idempotent replay, required-consent rejection returns 400.
+  - Browser-side portion (load `apps/extension/dist` at `chrome://extensions` with Developer Mode on, click the toolbar icon, exercise the popup) still needs the user to perform manually.
 
 ---
 
