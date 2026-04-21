@@ -50,5 +50,5 @@ Commands run:
 
 - Committed: yes.
 - Pushed: yes.
-- Commit: `5f32c76`.
+- Commit: see latest Git log for this session note.
 - Deferred reason: Existing implementation WIP in `apps/api/src/seed.ts` remains uncommitted because this was a familiarization pass, and verification found blockers that should be fixed before committing the seed workflow.
