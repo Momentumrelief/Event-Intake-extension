@@ -13,6 +13,7 @@ Create startup guidance files for Codex and Claude so each new session begins wi
 - `CLAUDE.md`: expanded the Claude guide to describe Claude as the primary implementation agent, with startup steps and implementation rules.
 - `AGENTS.md`: added a shared required startup directive that points agents to role-specific files, canonical project docs, latest session context, and `git status`.
 - `sessions/2026-04-21-1250-codex-agent-startup-guides.md`: added this handoff note.
+- Chat handoff: provided reusable startup prompts for Codex project-steward sessions, Claude implementation sessions, and the immediate next Claude task for fixing `TICKET-000`.
 
 ## Verification
 
@@ -20,6 +21,7 @@ Create startup guidance files for Codex and Claude so each new session begins wi
 - `Get-Content CLAUDE.md`: reviewed expanded Claude startup guide.
 - `Get-Content AGENTS.md`: reviewed shared startup directive.
 - `git diff -- CODEX.md CLAUDE.md AGENTS.md`: reviewed protocol changes.
+- `git status --short --branch`: confirmed only unrelated `apps/api/src/seed.ts` WIP remains after protocol commits.
 - Full code tests were not run because this was documentation/protocol-only work.
 
 ## Canonical Updates
