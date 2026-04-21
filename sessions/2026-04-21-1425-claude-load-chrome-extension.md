@@ -131,7 +131,7 @@ end-to-end against the local API.
 
 ## Git State
 
-- Committed: yes (see final assistant message for hash).
+- Committed: yes.
 - Pushed: yes.
-- Commit: filled in below after push.
+- Commit: `8e888a6` (Make extension build and contract loadable end-to-end (TICKET-001)).
 - Deferred reason: N/A.
