@@ -38,7 +38,7 @@ Help the user inspect Claude's recent changes, provide local sign-in details, an
 
 ## Git State
 
-- Committed: no.
-- Pushed: no.
-- Commit: N/A.
-- Deferred reason: Session close requested before I staged/committed the documentation-only handoff changes.
+- Committed: yes.
+- Pushed: yes.
+- Commit: `119ba15`.
+- Deferred reason: N/A.
