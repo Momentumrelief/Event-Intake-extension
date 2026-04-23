@@ -38,7 +38,7 @@ export class MockEhrAdapter implements EhrAdapter {
     return { ehrPatientId, ehrProvider: "csv" };
   }
 
-  async exportCsv(leads: NormalizedLead[], mappings: FieldMapping[]): Promise<Buffer> {
+  async exportCsv(leads: NormalizedLead[], mappings: FieldMapping[]): Promise<Uint8Array> {
     const coreHeaders = ["id", "firstName", "lastName", "email", "phone", "dateOfBirth"];
     const mappingHeaders = mappings.map((m) => m.ehrFieldPath);
     const headers = [...coreHeaders, ...mappingHeaders];

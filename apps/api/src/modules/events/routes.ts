@@ -121,10 +121,34 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
   app.get("/clinics/:clinicId/form-templates", async (req) => {
     const { clinicId } = req.params as { clinicId: string };
     await assertClinicAccess(clinicId, req.user.sub);
-    return prisma.formTemplate.findMany({
+    const templates = await prisma.formTemplate.findMany({
       where: { clinicId },
-      include: { versions: { orderBy: { versionNumber: "desc" }, take: 1 } },
+      include: {
+        versions: {
+          orderBy: { versionNumber: "desc" },
+          take: 1,
+          include: { _count: { select: { fields: true, leads: true } } },
+        },
+      },
       orderBy: { createdAt: "desc" },
+    });
+    return templates.map((t) => {
+      const [latest] = t.versions;
+      return {
+        id: t.id,
+        name: t.name,
+        createdAt: t.createdAt,
+        latestVersion: latest
+          ? {
+              id: latest.id,
+              versionNumber: latest.versionNumber,
+              isPublished: latest.isPublished,
+              publishedAt: latest.publishedAt,
+              fieldCount: latest._count.fields,
+              leadCount: latest._count.leads,
+            }
+          : null,
+      };
     });
   });
 
@@ -135,6 +159,7 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
     const BodySchema = z.object({
       name: z.string().min(1).max(200),
       fields: z.array(z.any()),
+      publish: z.boolean().optional().default(true),
     });
     const body = BodySchema.safeParse(req.body);
     if (!body.success) throw new ValidationError(body.error.message);
@@ -144,7 +169,12 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
         data: { clinicId, name: body.data.name },
       });
       const version = await tx.formTemplateVersion.create({
-        data: { formTemplateId: tmpl.id, versionNumber: 1 },
+        data: {
+          formTemplateId: tmpl.id,
+          versionNumber: 1,
+          isPublished: body.data.publish,
+          publishedAt: body.data.publish ? new Date() : null,
+        },
       });
       const fields = body.data.fields as Array<{
         key: string; label: string; type: string; required: boolean;
@@ -161,7 +191,8 @@ export async function eventRoutes(app: FastifyInstance): Promise<void> {
           required: f.required,
           helpText: f.helpText,
           placeholder: f.placeholder,
-          options: f.options as never,
+          // options is a JSON-serialized string in SQLite
+          options: f.options ? JSON.stringify(f.options) : null,
           piiCategory: (f.piiCategory as never) ?? "none",
           ehrFieldPath: f.ehrFieldPath,
           ehrTransform: f.ehrTransform as never,

@@ -1,5 +1,146 @@
 const BASE = "/api";
 
+export type EventStatus = "draft" | "active" | "closed" | "archived";
+export type EventType =
+  | "marathon"
+  | "medical_conference"
+  | "health_fair"
+  | "corporate_event"
+  | "screening"
+  | "other";
+
+export interface EventListItem {
+  id: string;
+  name: string;
+  eventType: EventType;
+  locationName?: string | null;
+  startAt: string;
+  endAt: string;
+  timezone: string;
+  status: EventStatus;
+  campaignTags: string[];
+  leadCount: number;
+  defaultFormTemplateVersionId?: string | null;
+}
+
+export interface EventDetail {
+  id: string;
+  clinicId: string;
+  name: string;
+  eventType: EventType;
+  locationName?: string | null;
+  address?: string | null;
+  startAt: string;
+  endAt: string;
+  timezone: string;
+  status: EventStatus;
+  campaignTags: string;
+  defaultFormTemplateVersionId?: string | null;
+  consentRequirements?: Array<{
+    id: string;
+    eventId: string;
+    consentTemplateVersionId: string;
+    required: boolean;
+    displayOrder: number;
+    consentTemplateVersion?: {
+      id: string;
+      versionNumber: number;
+      bodyText: string;
+      shortLabel: string;
+      consentTemplate: { id: string; name: string; consentType: string };
+    };
+  }>;
+}
+
+export interface CreateEventPayload {
+  name: string;
+  eventType: EventType;
+  locationName?: string;
+  address?: string;
+  startAt: string;
+  endAt: string;
+  timezone: string;
+  campaignTags?: string[];
+  defaultFormTemplateVersionId?: string;
+}
+
+export type FieldType =
+  | "short_text"
+  | "long_text"
+  | "phone"
+  | "email"
+  | "address"
+  | "date"
+  | "date_of_birth"
+  | "single_select"
+  | "multi_select"
+  | "checkbox"
+  | "consent_checkbox"
+  | "number";
+
+export type PiiCategory = "none" | "contact" | "health" | "demographic" | "insurance";
+
+export interface FormFieldInput {
+  key: string;
+  label: string;
+  type: FieldType;
+  required: boolean;
+  // Zod `.optional()` infers `T | undefined` on the output shape rather than a
+  // missing property, so allow `undefined` explicitly to stay compatible with
+  // exactOptionalPropertyTypes.
+  helpText?: string | undefined;
+  placeholder?: string | undefined;
+  options?: Array<{ value: string; label: string }> | undefined;
+  piiCategory: PiiCategory;
+  ehrFieldPath?: string | undefined;
+  ehrTransform?: "none" | "uppercase" | "date_iso" | "phone_e164" | undefined;
+  ehrFallbackToNote?: boolean | undefined;
+  displayOrder: number;
+}
+
+export interface FormTemplateListItem {
+  id: string;
+  name: string;
+  createdAt: string;
+  latestVersion: {
+    id: string;
+    versionNumber: number;
+    isPublished: boolean;
+    publishedAt: string | null;
+    fieldCount: number;
+    leadCount: number;
+  } | null;
+}
+
+export interface FormTemplateVersionDetail {
+  id: string;
+  formTemplateId: string;
+  versionNumber: number;
+  isPublished: boolean;
+  publishedAt: string | null;
+  createdAt: string;
+  formTemplate: { id: string; name: string; clinicId: string };
+  fields: Array<FormFieldInput & { id: string; formTemplateVersionId: string }>;
+}
+
+export interface ConsentTemplateListItem {
+  id: string;
+  name: string;
+  consentType: "contact" | "marketing" | "treatment" | "custom";
+  versions: Array<{
+    id: string;
+    versionNumber: number;
+    bodyText: string;
+    shortLabel: string;
+  }>;
+}
+
+export interface EventConsentRequirementPayload {
+  consentTemplateVersionId: string;
+  required: boolean;
+  displayOrder: number;
+}
+
 let _token: string | null = localStorage.getItem("ei_token");
 
 export function setToken(token: string) {
@@ -48,16 +189,32 @@ export const api = {
   },
   events: {
     list: (clinicId: string, status?: string) =>
-      request<unknown[]>(`/clinics/${clinicId}/events${status ? `?status=${status}` : ""}`),
-    get: (id: string) => request<unknown>(`/events/${id}`),
-    create: (clinicId: string, data: unknown) =>
-      request<unknown>(`/clinics/${clinicId}/events`, { method: "POST", body: JSON.stringify(data) }),
-    update: (id: string, data: unknown) =>
-      request<unknown>(`/events/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+      request<EventListItem[]>(`/clinics/${clinicId}/events${status ? `?status=${status}` : ""}`),
+    get: (id: string) => request<EventDetail>(`/events/${id}`),
+    create: (clinicId: string, data: CreateEventPayload) =>
+      request<EventDetail>(`/clinics/${clinicId}/events`, { method: "POST", body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<CreateEventPayload> & { status?: EventStatus }) =>
+      request<EventDetail>(`/events/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     leads: (eventId: string, status?: string, page = 1) =>
       request<{ leads: unknown[]; total: number }>(`/events/${eventId}/leads?${new URLSearchParams({ ...(status ? { status } : {}), page: String(page) })}`),
     exportCsv: (eventId: string, data: unknown) =>
       fetch(`${BASE}/events/${eventId}/export/csv`, { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${_token}` }, body: JSON.stringify(data) }),
+  },
+  formTemplates: {
+    list: (clinicId: string) =>
+      request<FormTemplateListItem[]>(`/clinics/${clinicId}/form-templates`),
+    create: (clinicId: string, data: { name: string; fields: FormFieldInput[]; publish?: boolean }) =>
+      request<{ id: string; name: string; currentVersionId: string }>(
+        `/clinics/${clinicId}/form-templates`,
+        { method: "POST", body: JSON.stringify(data) },
+      ),
+    getVersion: (versionId: string) =>
+      request<FormTemplateVersionDetail>(`/form-template-versions/${versionId}`),
+    publish: (templateId: string, versionId: string) =>
+      request<unknown>(`/form-templates/${templateId}/versions/publish`, {
+        method: "POST",
+        body: JSON.stringify({ versionId }),
+      }),
   },
   leads: {
     get: (id: string) => request<unknown>(`/leads/${id}`),
@@ -78,14 +235,15 @@ export const api = {
       request<unknown>(`/leads/${id}/sync`, { method: "POST", body: JSON.stringify({ ehrConnectionId }) }),
   },
   consent: {
-    templates: (clinicId: string) => request<unknown[]>(`/clinics/${clinicId}/consent-templates`),
+    templates: (clinicId: string) =>
+      request<ConsentTemplateListItem[]>(`/clinics/${clinicId}/consent-templates`),
     createTemplate: (clinicId: string, data: unknown) =>
       request<unknown>(`/clinics/${clinicId}/consent-templates`, { method: "POST", body: JSON.stringify(data) }),
     versions: (templateId: string) => request<unknown[]>(`/consent-templates/${templateId}/versions`),
     createVersion: (templateId: string, data: unknown) =>
       request<unknown>(`/consent-templates/${templateId}/versions`, { method: "POST", body: JSON.stringify(data) }),
     eventRequirements: (eventId: string) => request<unknown[]>(`/events/${eventId}/consent-requirements`),
-    setEventRequirements: (eventId: string, requirements: unknown[]) =>
+    setEventRequirements: (eventId: string, requirements: EventConsentRequirementPayload[]) =>
       request<unknown>(`/events/${eventId}/consent-requirements`, { method: "PUT", body: JSON.stringify({ requirements }) }),
   },
   ehr: {

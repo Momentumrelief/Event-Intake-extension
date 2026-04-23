@@ -65,5 +65,8 @@ export interface EhrAdapter {
     mappings: FieldMapping[],
   ): Promise<void>;
   createNote?(connectionId: string, ehrPatientId: string, noteBody: string): Promise<void>;
-  exportCsv(leads: NormalizedLead[], mappings: FieldMapping[]): Promise<Buffer>;
+  // Returns CSV bytes. Typed as Uint8Array so the interface doesn't require
+  // Node types on the browser side; Node implementations can still return Buffer
+  // since Buffer extends Uint8Array.
+  exportCsv(leads: NormalizedLead[], mappings: FieldMapping[]): Promise<Uint8Array>;
 }

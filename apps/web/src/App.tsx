@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate, NavLink, useNavigate } from "re
 import { useState, useEffect } from "react";
 import { LoginPage } from "./pages/LoginPage.js";
 import { ReviewQueuePage } from "./pages/ReviewQueuePage.js";
+import { EventsListPage } from "./pages/EventsListPage.js";
+import { EventEditPage } from "./pages/EventEditPage.js";
+import { EventDetailPage } from "./pages/EventDetailPage.js";
 import { api, getToken, clearToken } from "./lib/api.js";
 
 interface AuthUser {
@@ -69,15 +72,6 @@ function DashboardPage({ clinicId }: { clinicId: string }) {
   );
 }
 
-function EventsPlaceholder() {
-  return (
-    <div style={{ padding: "24px 32px" }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Events</h2>
-      <p style={{ color: "#6b7280", fontSize: 14 }}>Event management UI — coming in Phase 3.</p>
-    </div>
-  );
-}
-
 // All routing lives inside BrowserRouter so hooks like useNavigate work
 function AppRoutes() {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -125,7 +119,10 @@ function AppRoutes() {
                 <Routes>
                   <Route path="/" element={<DashboardPage clinicId={clinicId} />} />
                   <Route path="/review" element={<ReviewQueuePage clinicId={clinicId} />} />
-                  <Route path="/events" element={<EventsPlaceholder />} />
+                  <Route path="/events" element={<EventsListPage clinicId={clinicId} />} />
+                  <Route path="/events/new" element={<EventEditPage clinicId={clinicId} />} />
+                  <Route path="/events/:id" element={<EventDetailPage />} />
+                  <Route path="/events/:id/edit" element={<EventEditPage clinicId={clinicId} />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Layout>

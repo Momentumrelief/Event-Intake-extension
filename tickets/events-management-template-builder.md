@@ -1,10 +1,12 @@
 # Ticket: Events Management And Inline Template Builder
 
-Status: open
+Status: done
 Type: feature
 Priority: P1
-Owner: unassigned
+Owner: claude
 Created: 2026-04-21
+Closed: 2026-04-23
+Session: `sessions/2026-04-23-1700-claude-ticket-002-events-management.md`
 
 ## Context
 

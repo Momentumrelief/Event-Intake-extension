@@ -42,7 +42,7 @@
 
 ### TICKET-002: Events management and inline template builder
 
-- Status: open
+- Status: done
 - Type: feature
 - Priority: P1
 - Ticket: `tickets/events-management-template-builder.md`
@@ -55,6 +55,7 @@
   - Preview the event intake questionnaire before publishing
   - Edit/deactivate/archive event
   - Form template version and consent requirements visible on event detail
+- Resolution: Web admin now has `/events` (list), `/events/new` + `/events/:id/edit` (create/edit with segmented existing-vs-new template picker, preset chips, inline field builder, required/optional consent picker, live + modal questionnaire preview), and `/events/:id` (detail with assigned template version, consent requirements, and Edit/Activate/Close/Draft/Archive actions). Inline-created templates are auto-published so they can be assigned immediately; existing templates stay immutable once leads reference them. API tweaks: `GET /clinics/:id/form-templates` returns `latestVersion.fieldCount/leadCount`, `POST /clinics/:id/form-templates` takes an optional `publish` flag (defaults true) and now stores options as `JSON.stringify(...)` matching the seed/read path. Verified via `pnpm --filter web typecheck/build` + curl-driven API smoke (login, list/POST templates, POST event, PATCH through active/closed/archived, PUT consent requirements). Session: `sessions/2026-04-23-1700-claude-ticket-002-events-management.md`. Browser click-through is the only step deferred to a human.
 
 ---
 
