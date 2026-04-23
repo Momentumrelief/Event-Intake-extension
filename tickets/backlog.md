@@ -160,6 +160,20 @@
   - Add or select a logo for the questionnaire
   - Configure primary, accent, background, and button colors
   - Configure questionnaire title and intro text
-  - Preview branding with a real template and consent blocks
-  - Apply branding consistently in the client-facing intake UI
-  - Keep branding scoped by clinic
+- Preview branding with a real template and consent blocks
+- Apply branding consistently in the client-facing intake UI
+- Keep branding scoped by clinic
+
+---
+
+### TICKET-010: Fix local API startup and Windows dev ergonomics
+
+- Status: open
+- Type: bug
+- Priority: P1
+- Context: Local startup instructions on `main` are brittle on Windows. `pnpm --filter api dev` is currently broken because the API script uses `tsx --env-file=.env watch src/main.ts`, which makes `tsx` treat `watch` as a module path. During manual startup, PowerShell also blocks `pnpm.ps1` on systems with restrictive execution policy, so `.CMD` shims or `cmd.exe` are required in some environments.
+- Acceptance criteria:
+  - `pnpm --filter api dev` starts the API successfully on Windows and non-Windows shells
+  - README startup instructions match the working commands
+  - Login flow can be exercised locally with the seeded demo user using the documented startup path
+  - Any required PowerShell or `.CMD` guidance is documented only if still necessary after the script fix

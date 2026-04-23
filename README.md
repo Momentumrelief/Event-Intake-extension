@@ -39,12 +39,15 @@ npx prisma generate
 # 3. Seed demo data (creates admin@demo.com / password123)
 npx tsx src/seed.ts
 
-# 4. Start the API (from repo root)
-cd ../..
-pnpm --filter api dev        # runs on http://localhost:3000
+# 4. Start the API (still from apps/api)
+# Current note: `pnpm --filter api dev` is broken on main because the script
+# uses `tsx --env-file=.env watch src/main.ts`, and `tsx` interprets `watch`
+# as a module path. Use the direct command below until TICKET-010 is fixed.
+./node_modules/.bin/tsx --env-file=.env src/main.ts   # or on Windows: .\node_modules\.bin\tsx.CMD --env-file=.env src\main.ts
 
-# 5. Start the web admin (new terminal, from repo root)
-pnpm --filter web dev        # runs on http://localhost:5173
+# 5. Start the web admin (new terminal)
+cd ../web
+./node_modules/.bin/vite     # or on Windows: .\node_modules\.bin\vite.CMD
 ```
 
 Open http://localhost:5173 and log in with `admin@demo.com` / `password123`.
