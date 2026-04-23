@@ -145,8 +145,8 @@ re-running `pnpm --filter api db:seed` if a clean slate is preferred
   - `apps/web/src/pages/EventEditPage.tsx`
   - `apps/web/src/pages/EventDetailPage.tsx`
   - `sessions/2026-04-23-1700-claude-ticket-002-events-management.md`
-- Committed: see final assistant message for hash.
-- Pushed: see final assistant message.
+- Committed: yes — `fbea9d6`.
+- Pushed: yes — `origin/main` (`90056ff..fbea9d6`).
 
 ## Deferred / unverified
 
