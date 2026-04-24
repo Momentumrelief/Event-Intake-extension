@@ -37,6 +37,12 @@
   - Fixed `GET /form-template-versions/:id` to parse `options` JSON before returning.
   - Verified end-to-end API contract the extension uses: login, list active events, load form version (options arrive parsed), load consent requirements, submit new lead (→ ready), submit duplicate (→ needs_review with `duplicateCandidateCount=1`), idempotent replay, required-consent rejection returns 400.
   - Browser-side portion (load `apps/extension/dist` at `chrome://extensions` with Developer Mode on, click the toolbar icon, exercise the popup) still needs the user to perform manually.
+- Progress (2026-04-23 claude session):
+  - Removed the `icons` block from `apps/extension/public/manifest.json` — the manifest referenced `icons/icon{16,48,128}.png`, but no icon files exist in the repo, so Chrome was flagging the extension on load. Without the block Chrome falls back to the default toolbar icon and loads cleanly.
+  - Rebuilt `apps/extension/dist` from fresh source; confirmed `dist/manifest.json`, `dist/popup/{index.html,popup.js}`, and `dist/background/service-worker.js` are all present.
+  - Re-ran the full API contract with the live local API (demo seed): login, list active events (3), fetch form version fields (`first_name/last_name/email/phone/race_distance/primary_concern`), fetch consent requirements (contact required + marketing optional, nested `consentTemplateVersion.consentTemplate.consentType` present), POST lead (→ `ready`, `duplicateCandidateCount=0`), POST duplicate-email lead (→ `needs_review`, `duplicateCandidateCount=1`).
+  - CORS on the API already allows `chrome-extension://*` (see `apps/api/.env` + `apps/api/src/app.ts:40`), so the extension can reach `http://localhost:3000` from its own origin.
+  - Remaining human-only step: in Chrome open `chrome://extensions`, enable Developer Mode, click "Load unpacked", and select `C:\Users\paint\eventintake\apps\extension\dist`. Then click the Event Intake toolbar icon, sign in with `admin@demo.com` / `password123`, select an event, submit one lead, submit a second lead reusing the same email, and confirm the duplicate warning appears on the success screen.
 
 ---
 
