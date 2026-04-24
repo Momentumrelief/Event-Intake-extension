@@ -40,5 +40,5 @@ Restore `pnpm --filter api dev` as the documented local startup path so the seed
 
 - Committed: yes.
 - Pushed: yes.
-- Commit: recorded via commit after this note is written.
+- Commit: `a0c60f7`.
 - Deferred reason: N/A.
