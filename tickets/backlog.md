@@ -43,6 +43,14 @@
   - Re-ran the full API contract with the live local API (demo seed): login, list active events (3), fetch form version fields (`first_name/last_name/email/phone/race_distance/primary_concern`), fetch consent requirements (contact required + marketing optional, nested `consentTemplateVersion.consentTemplate.consentType` present), POST lead (→ `ready`, `duplicateCandidateCount=0`), POST duplicate-email lead (→ `needs_review`, `duplicateCandidateCount=1`).
   - CORS on the API already allows `chrome-extension://*` (see `apps/api/.env` + `apps/api/src/app.ts:40`), so the extension can reach `http://localhost:3000` from its own origin.
   - Remaining human-only step: in Chrome open `chrome://extensions`, enable Developer Mode, click "Load unpacked", and select `C:\Users\paint\eventintake\apps\extension\dist`. Then click the Event Intake toolbar icon, sign in with `admin@demo.com` / `password123`, select an event, submit one lead, submit a second lead reusing the same email, and confirm the duplicate warning appears on the success screen.
+- Progress (2026-04-24 claude session — popup submit clarity):
+  - User feedback after loading the extension: "popup does not clearly allow submitting a lead." Root cause: 360x(unbounded) popup body + a 6-field/2-consent form ≈ 720–800px tall meant the **Submit Lead** button rendered below Chrome's 600px popup ceiling, and the Save Draft success message reused the red error banner.
+  - Restructured the form layout into a fixed-height flex column (380x600 popup body, scrollable field area, **sticky footer** that always shows Save Draft + Submit Lead). Submit button label now shows blocked state ("Submit Lead (N missing)") and dims to grey while incomplete; clicking it still runs validation and scrolls to the first invalid control.
+  - Validation summary (orange banner) is now bold + plural-aware and lists every missing field/consent label inside the always-visible footer.
+  - Split status banners: green info banner for "Draft saved locally." / offline-saved messages; red error banner reserved for actual failures and now includes the remediation step (e.g. "Confirm 'pnpm --filter api dev' is running…").
+  - Kept and built on the user's prior uncommitted edits to `LeadForm.tsx` (focus-first-error, conditional optional payload spread) and `ConsentBlock.tsx` (per-consent error prop, htmlFor checkbox).
+  - Files: `apps/extension/src/popup/index.html`, `apps/extension/src/popup/App.tsx`, `apps/extension/src/popup/components/LeadForm.tsx`. Built clean (`pnpm --filter extension typecheck` + `build`). Re-verified extension API contract end-to-end.
+  - Remaining human-only step: reload the extension in `chrome://extensions` and run the 12-step retest checklist in `sessions/2026-04-24-1700-claude-ticket-001-popup-submit-clarity.md`.
 
 ---
 

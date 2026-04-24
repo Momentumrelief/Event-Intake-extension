@@ -234,8 +234,8 @@ export function App() {
 
   // form screen
   return (
-    <div style={styles.page}>
-      <div style={styles.header}>
+    <div style={styles.formPage}>
+      <div style={{ ...styles.header, padding: "8px 14px", marginBottom: 0, flexShrink: 0 }}>
         <div>
           <span style={styles.eventBadge}>{selectedEvent?.name ?? "Event"}</span>
         </div>
@@ -264,6 +264,7 @@ export function App() {
 
 const styles: Record<string, React.CSSProperties> = {
   page: { padding: "12px 14px", minHeight: 200 },
+  formPage: { display: "flex", flexDirection: "column", flex: 1, minHeight: 0 },
   centered: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 32, gap: 12 },
   spinner: { width: 24, height: 24, border: "3px solid #e5e7eb", borderTopColor: "#2563eb", borderRadius: "50%", animation: "spin 0.7s linear infinite" },
   loadingText: { fontSize: 12, color: "#9ca3af" },

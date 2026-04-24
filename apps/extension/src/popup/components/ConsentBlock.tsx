@@ -4,21 +4,29 @@ interface Props {
   requirement: ApiConsentRequirement;
   granted: boolean;
   onChange: (granted: boolean) => void;
+  error?: string;
 }
 
-export function ConsentBlock({ requirement, granted, onChange }: Props) {
+export function ConsentBlock({ requirement, granted, onChange, error }: Props) {
   const { consentTemplateVersion: version } = requirement;
   const isRequired = requirement.required;
+  const checkboxId = `consent-${requirement.consentTemplateVersionId}`;
 
   return (
-    <div style={{ ...styles.block, borderColor: isRequired && !granted ? "#f87171" : "#e5e7eb" }}>
+    <div
+      style={{
+        ...styles.block,
+        borderColor: error ? "#f87171" : isRequired && !granted ? "#f87171" : "#e5e7eb",
+      }}
+    >
       <div style={styles.typeTag}>
         {version.consentTemplate.consentType.toUpperCase()}
         {isRequired && <span style={styles.required}>*</span>}
       </div>
       <p style={styles.body}>{version.bodyText}</p>
-      <label style={styles.checkRow}>
+      <label htmlFor={checkboxId} style={styles.checkRow}>
         <input
+          id={checkboxId}
           type="checkbox"
           checked={granted}
           onChange={(e) => onChange(e.target.checked)}
@@ -27,7 +35,10 @@ export function ConsentBlock({ requirement, granted, onChange }: Props) {
         />
         <span style={styles.checkLabel}>{version.shortLabel}</span>
       </label>
-      {isRequired && !granted && (
+      {error && (
+        <p style={styles.errorHint}>{error}</p>
+      )}
+      {!error && isRequired && !granted && (
         <p style={styles.errorHint}>This consent is required to submit.</p>
       )}
     </div>
