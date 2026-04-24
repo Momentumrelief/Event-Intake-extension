@@ -5,6 +5,7 @@ import { ReviewQueuePage } from "./pages/ReviewQueuePage.js";
 import { EventsListPage } from "./pages/EventsListPage.js";
 import { EventEditPage } from "./pages/EventEditPage.js";
 import { EventDetailPage } from "./pages/EventDetailPage.js";
+import { LeadDetailPage } from "./pages/LeadDetailPage.js";
 import { api, getToken, clearToken } from "./lib/api.js";
 
 interface AuthUser {
@@ -119,6 +120,7 @@ function AppRoutes() {
                 <Routes>
                   <Route path="/" element={<DashboardPage clinicId={clinicId} />} />
                   <Route path="/review" element={<ReviewQueuePage clinicId={clinicId} />} />
+                  <Route path="/leads/:id" element={<LeadDetailPage />} />
                   <Route path="/events" element={<EventsListPage clinicId={clinicId} />} />
                   <Route path="/events/new" element={<EventEditPage clinicId={clinicId} />} />
                   <Route path="/events/:id" element={<EventDetailPage />} />

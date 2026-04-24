@@ -141,6 +141,146 @@ export interface EventConsentRequirementPayload {
   displayOrder: number;
 }
 
+export type LeadStatus =
+  | "draft"
+  | "submitted"
+  | "needs_review"
+  | "ready"
+  | "sync_queued"
+  | "syncing"
+  | "synced"
+  | "sync_failed"
+  | "sync_rejected"
+  | "exported"
+  | "archived";
+
+export interface LeadFieldValueDetail {
+  id: string;
+  formFieldId: string;
+  value: string;
+  formField: {
+    id: string;
+    key: string;
+    label: string;
+    type: FieldType;
+    required: boolean;
+    options: string | null;
+    displayOrder: number;
+  };
+}
+
+export interface LeadConsentDetail {
+  id: string;
+  consentTemplateVersionId: string;
+  granted: boolean;
+  capturedAt: string;
+  capturedBy: string;
+  rawCheckboxValue: boolean;
+  consentTemplateVersion: {
+    id: string;
+    versionNumber: number;
+    shortLabel: string;
+    bodyText: string;
+    consentTemplate: {
+      id: string;
+      name: string;
+      consentType: "contact" | "marketing" | "treatment" | "custom";
+    };
+  };
+}
+
+export interface DuplicateCandidateDetail {
+  id: string;
+  leadId: string;
+  candidateType: "internal_lead" | "ehr_patient";
+  candidateRef: string;
+  matchReason: string;
+  matchScore: number;
+  status: "pending" | "merged" | "dismissed" | "new_record";
+  resolvedBy: string | null;
+  resolvedAt: string | null;
+  resolutionNote: string | null;
+  createdAt: string;
+}
+
+export interface SyncJobDetail {
+  id: string;
+  leadId: string;
+  ehrConnectionId: string;
+  status: "queued" | "running" | "succeeded" | "failed" | "rejected" | "cancelled";
+  attemptCount: number;
+  maxAttempts: number;
+  lastAttemptedAt: string | null;
+  nextRetryAt: string | null;
+  ehrPatientId: string | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EhrPatientRefDetail {
+  id: string;
+  leadId: string;
+  ehrProvider: string;
+  ehrPatientId: string;
+  createdAt: string;
+}
+
+export interface LeadNoteDetail {
+  id: string;
+  leadId: string;
+  body: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface LeadDetail {
+  id: string;
+  eventId: string;
+  formTemplateVersionId: string;
+  firstName: string;
+  lastName: string;
+  email: string | null;
+  phone: string | null;
+  dateOfBirth: string | null;
+  source: string | null;
+  status: LeadStatus;
+  idempotencyKey: string;
+  createdBy: string;
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectionReason: string | null;
+  createdAt: string;
+  updatedAt: string;
+  event: {
+    id: string;
+    clinicId: string;
+    name: string;
+    eventType: EventType;
+    status: EventStatus;
+  };
+  formTemplateVersion: {
+    id: string;
+    versionNumber: number;
+    fields: Array<{
+      id: string;
+      key: string;
+      label: string;
+      type: FieldType;
+      required: boolean;
+      displayOrder: number;
+      options: string | null;
+    }>;
+  };
+  fieldValues: LeadFieldValueDetail[];
+  consents: LeadConsentDetail[];
+  duplicates: DuplicateCandidateDetail[];
+  syncJobs: SyncJobDetail[];
+  ehrPatientRef: EhrPatientRefDetail | null;
+  notes: LeadNoteDetail[];
+}
+
 let _token: string | null = localStorage.getItem("ei_token");
 
 export function setToken(token: string) {
@@ -217,7 +357,7 @@ export const api = {
       }),
   },
   leads: {
-    get: (id: string) => request<unknown>(`/leads/${id}`),
+    get: (id: string) => request<LeadDetail>(`/leads/${id}`),
     approve: (id: string, note?: string) =>
       request<unknown>(`/leads/${id}/approve`, { method: "POST", body: JSON.stringify({ note }) }),
     reject: (id: string, reason: string) =>
@@ -226,11 +366,18 @@ export const api = {
       request<unknown>("/leads/bulk-approve", { method: "POST", body: JSON.stringify({ leadIds }) }),
     reviewQueue: (clinicId: string, status?: string, page = 1) =>
       request<{ leads: unknown[]; total: number }>(`/clinics/${clinicId}/review-queue?${new URLSearchParams({ ...(status ? { status } : {}), page: String(page) })}`),
-    duplicates: (id: string) => request<unknown[]>(`/leads/${id}/duplicates`),
-    resolveCandidate: (id: string, candidateId: string, data: unknown) =>
-      request<unknown>(`/leads/${id}/duplicates/${candidateId}/resolve`, { method: "POST", body: JSON.stringify(data) }),
+    duplicates: (id: string) => request<DuplicateCandidateDetail[]>(`/leads/${id}/duplicates`),
+    resolveCandidate: (
+      id: string,
+      candidateId: string,
+      data: { status: "merged" | "dismissed" | "new_record"; resolutionNote?: string },
+    ) =>
+      request<DuplicateCandidateDetail>(`/leads/${id}/duplicates/${candidateId}/resolve`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
     copyPacket: (id: string) => request<unknown>(`/leads/${id}/copy-packet`),
-    syncJobs: (id: string) => request<unknown[]>(`/leads/${id}/sync-jobs`),
+    syncJobs: (id: string) => request<SyncJobDetail[]>(`/leads/${id}/sync-jobs`),
     sync: (id: string, ehrConnectionId: string) =>
       request<unknown>(`/leads/${id}/sync`, { method: "POST", body: JSON.stringify({ ehrConnectionId }) }),
   },

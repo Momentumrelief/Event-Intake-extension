@@ -67,7 +67,7 @@
 
 ### TICKET-003: Lead detail page
 
-- Status: open
+- Status: done (pending human browser click-through)
 - Type: feature
 - Priority: P1
 - Context: Review queue shows leads but no detail view. Operators need to see full field values, consent status, sync history, and duplicate candidates side-by-side.
@@ -77,6 +77,7 @@
   - Duplicate candidates listed with match score and reason
   - Resolve/dismiss duplicate action available
   - EHR sync history (status, timestamp, error if any)
+- Resolution: New page `apps/web/src/pages/LeadDetailPage.tsx`, route `/leads/:id` added in `apps/web/src/App.tsx` (review queue's existing Review button already navigates there). API side needed no new endpoints — `GET /leads/:id` already returns event, formTemplateVersion.fields, fieldValues.formField, consents.consentTemplateVersion.consentTemplate, duplicates, syncJobs, ehrPatientRef, and notes in one response. `apps/web/src/lib/api.ts` gained full typed interfaces for `LeadDetail`, `DuplicateCandidateDetail`, `SyncJobDetail`, `EhrPatientRefDetail`, `LeadFieldValueDetail`, `LeadConsentDetail`, and `LeadNoteDetail`; `api.leads.get/duplicates/syncJobs/resolveCandidate` are typed accordingly. Page sections: breadcrumb + header with status badge/event link/timestamps, Approve/Reject action bar (Approve disabled when pending duplicates block it or status is not `submitted/needs_review/sync_failed/sync_rejected`), Identity & contact card, Submitted fields card (skips core contact fields since they already appear above; renders single/multi select options via the parsed `options` JSON; checkbox/consent_checkbox rendered as Yes/No; long_text preserves newlines), Consents table (type tag + short label + granted pill + captured-at + version), Duplicate candidates list (match score as percentage, `matchReason` JSON parsed into chips, candidate type and `candidateRef`, inline Dismiss / Mark as new record buttons wired to `POST /leads/:id/duplicates/:candidateId/resolve`, already-resolved candidates show a resolution footnote), EHR sync history card (green banner when `ehrPatientRef` is present, sync-job table when jobs exist, clear empty states otherwise). Merge-into-target flow is intentionally out of scope — noted via a footnote under the duplicate list rather than a disabled button to avoid misrepresenting functionality. Verified via `pnpm --filter web typecheck` (clean) and `pnpm --filter web build` (62 modules, 299 kB bundle). Smoke-tested the data path through the vite proxy: `curl http://localhost:5173/api/leads/66660000-0000-1000-0000-000000000002` returns `status=needs_review, dupes=1, consents=2, fieldValues=6`. Browser click-through on `http://localhost:5173/leads/<id>` with the seeded demo login still awaits a human session. Session: `sessions/2026-04-23-2345-claude-ticket-003-lead-detail.md`.
 
 ---
 
