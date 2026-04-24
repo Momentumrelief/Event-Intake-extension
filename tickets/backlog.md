@@ -168,12 +168,13 @@
 
 ### TICKET-010: Fix local API startup and Windows dev ergonomics
 
-- Status: open
+- Status: done
 - Type: bug
 - Priority: P1
-- Context: Local startup instructions on `main` are brittle on Windows. `pnpm --filter api dev` is currently broken because the API script uses `tsx --env-file=.env watch src/main.ts`, which makes `tsx` treat `watch` as a module path. During manual startup, PowerShell also blocks `pnpm.ps1` on systems with restrictive execution policy, so `.CMD` shims or `cmd.exe` are required in some environments.
+- Context: Local startup instructions on `main` were brittle on Windows. `pnpm --filter api dev` was broken because the API script used `tsx --env-file=.env watch src/main.ts`, which made `tsx` treat `watch` as a module path. PowerShell with restrictive execution policy also blocks `pnpm.ps1` on some machines.
 - Acceptance criteria:
   - `pnpm --filter api dev` starts the API successfully on Windows and non-Windows shells
   - README startup instructions match the working commands
   - Login flow can be exercised locally with the seeded demo user using the documented startup path
   - Any required PowerShell or `.CMD` guidance is documented only if still necessary after the script fix
+- Resolution: Reordered `apps/api/package.json` dev script to `tsx watch --env-file=.env src/main.ts` so `tsx` recognises `watch` as its subcommand. `pnpm --filter api dev` now boots the API on `http://localhost:3000` (verified via Git Bash on Windows 11). README Quick Start restored to `pnpm --filter api dev` / `pnpm --filter web dev` with a short PowerShell execution-policy caveat. Login smoke test: `POST /auth/login` with `admin@demo.com` / `password123` returned a JWT and `GET /auth/me` with that token returned the expected `Westside Physiotherapy` owner profile. Session: `sessions/2026-04-23-1830-claude-ticket-010-local-api-startup.md`.
